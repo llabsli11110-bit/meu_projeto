@@ -8,11 +8,11 @@ class cadastro(BaseModel):#baseModel cria um modelo de dados usando Pydantic , v
     #do Swagger , retorna 422 se algo tiver errado
     email:EmailStr #garante que um email seja email
     senha: str = Field(min_length=8) #garante que a senha tera no minimo 8 digitos
-    name:str
+    nome:str
 class Resposta(BaseModel): #modelo que sera devolvido na respostas 
     id:int
     nome:str
-    Email:EmailStr #sem senha
+    email:EmailStr #sem senha
 class configuracao :  
     from_attributes = True  #fastAPI converte automaticamente objeto para JSON
 @app.post("/cadastro",response_model=Resposta) #endpoint/ filtra dados, da um ".stri()" gera documento Swagger
