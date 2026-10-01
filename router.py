@@ -1,6 +1,6 @@
 from fastapi import FastAPI,HTTPException# retorna erro do http personalizado
 from pydantic import BaseModel, EmailStr,Field
-from security import verificação_senha, hash_senha #importação do codigo hash
+from security import verificacao_senha, hash_senha,criar_token #importação do codigo hash
 from models import User,session #model do SQLAlchemy ., session conxeão ativa com bd
 app = FastAPI() #chama a API
 
@@ -13,6 +13,18 @@ class Resposta(BaseModel): #modelo que sera devolvido na respostas
     id:int
     nome:str
     email:EmailStr #sem senha
+class Login(BaseModel):
+    email:EmailStr
+    senha:str
+@app.post("/login") #endpoint de login
+def login(dados:Login):
+    user = session.query(User).filter(User.email == dados.email).first() #procura usuario com email enviado
+    if not user:
+        raise HTTPException(status_code=400, detail="email ou senha invalidos") #se nao achar, retorna erro
+    if not verificacao_senha(dados.senha, user.senha_hash): #verifica se senha digitada bate com hash salvo
+        raise HTTPException(status_code=400, detail="email ou senha invalidos") #se nao bater, retorna erro
+    token = criar_token({"sub":user.email}) #cria token JWT com email do usuario como assunto (sub)
+    return {"access_token": token, "token_type": "bearer"} #retorna o token para o cliente
 class configuracao :  
     from_attributes = True  #fastAPI converte automaticamente objeto para JSON
 @app.post("/cadastro",response_model=Resposta) #endpoint/ filtra dados, da um ".stri()" gera documento Swagger

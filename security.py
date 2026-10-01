@@ -1,7 +1,7 @@
 import bcrypt
 from jose import jwt
 import os
-from dotenv import load_dotenv
+from dotenv import load_dotenv #biblioteca para ler variaveis de ambiente do .env
 from datetime import datetime, timedelta, timezone
 def hash_senha (senha:str)->str: #recebe tipo string e depois -> retorna string
     senha_bytes = senha.encode('utf-8') #convertendo para bytes 

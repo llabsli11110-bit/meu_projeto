@@ -2,7 +2,12 @@
 from sqlalchemy import Integer, String, create_engine, Column, ForeignKey
 from sqlalchemy.orm import sessionmaker, declarative_base, relationship  # atenção: é 'relationship', não 'relationships'
 import bcrypt
-database_url = "mysql+mysqlconnector://root:L14%40cas%242026@localhost:3306/cadastro"
+from dotenv import load_dotenv #biblioteca para ler variaveis de ambiente do .env
+import os
+
+load_dotenv() #carrega as variaveis de ambiente do .env para o ambiente de execução do Python, permitindo acessar as variaveis usando os.getenv()
+
+database_url = os.getenv("database_url") #variavel de ambiente para a url do banco de dados
 
 engine = create_engine(database_url, echo=True)
 
@@ -25,7 +30,7 @@ class Task(Base):
     __tablename__ = "tasks"  # plural é melhor para tabelas, mas pode ser singular
 
     id = Column(Integer, primary_key=True)
-    descricao = Column(String(100))  # corrigido typo 'descrisao' para 'descricao'
+    descricao = Column(String(100))  
     user_id = Column(Integer, ForeignKey('usuarios.id'), nullable=False)  # FK para tabela 'usuarios'
     user = relationship("User", back_populates="tasks")  # relacionamento com User
     
