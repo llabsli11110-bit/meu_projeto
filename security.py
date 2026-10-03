@@ -13,13 +13,14 @@ def verificacao_senha(userPassword: str, hash_salvo: str) -> bool:
     hash_bytes = hash_salvo.encode('utf-8')        # convertendo hash salvo para bytes
     result = bcrypt.checkpw(userbytes, hash_bytes) # checando
     return result
+load_dotenv() # carrega as variáveis de ambiente do .env
 secret_key = os.getenv("secret_key") #variavel de ambiente para a chave secreta
-algorithm = os.getenv("algorithm") #variavel de ambiente para o algoritmo de hash
+Algorithm = os.getenv("algorithm") #variavel de ambiente para o algoritmo de hash
 def criar_token(dados:dict) -> str: #cria token JWT
     payload = dados.copy()#copia do dicionário de dados para o payload do token
     agora = datetime.now(timezone.utc) #obtém a data e hora atual em UTC
     expiracao = agora + timedelta(minutes=30) #token expira em 30 minutos
     payload["iat"] = agora #adiciona a data de emissão ao payload
     payload["exp"] = expiracao #adiciona a data de expiração ao payload
-    token = jwt.encode(payload, secret_key, algorithm=algorithm) #gera o token JWT
+    token = jwt.encode(payload, secret_key, algorithm=Algorithm) #gera o token JWT
     return token #retorna o token gerado
