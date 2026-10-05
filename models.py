@@ -4,7 +4,7 @@ from sqlalchemy.orm import sessionmaker, declarative_base, relationship  # aten�
 import bcrypt
 from dotenv import load_dotenv #biblioteca para ler variaveis de ambiente do .env
 import os
-
+from sqlalchemy.orm import Session
 load_dotenv() #carrega as variaveis de ambiente do .env para o ambiente de execução do Python, permitindo acessar as variaveis usando os.getenv()
 
 database_url = os.getenv("database_url") #variavel de ambiente para a url do banco de dados
@@ -12,7 +12,13 @@ database_url = os.getenv("database_url") #variavel de ambiente para a url do ban
 engine = create_engine(database_url, echo=True)
 
 Session = sessionmaker(bind=engine)  # use nome diferente para a factory
-session = Session()  # cria a sessão para usar
+
+def get_db():
+    db = Session()
+    try:
+        yield db
+    finally:
+        db.close()
 
 Base = declarative_base()
 
