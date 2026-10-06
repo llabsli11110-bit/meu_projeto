@@ -40,7 +40,7 @@ def cadastro(dados:Cadastro, db: Session = Depends(get_db)):
         email = dados.email,
         senha_hash= senha_hash
     )
-    session.add(novo_usuario)#colcoa objeto na sessão
-    session.commit()#insert no bd 
-    session.refresh(novo_usuario)#atualiza o objeto com o bd 
+    db.add(novo_usuario)#colcoa objeto na sessão
+    db.commit()#insert no bd 
+    db.refresh(novo_usuario)#atualiza o objeto com o bd 
     return novo_usuario
