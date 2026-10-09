@@ -1,8 +1,10 @@
-from fastapi import Depends,FastAPI,HTTPException# retorna erro do http personalizado
+from fastapi import Depends,FastAPI,HTTPException, Header# retorna erro do http personalizado
 from pydantic import BaseModel,ConfigDict, EmailStr,Field
 from security import verificacao_senha, hash_senha,criar_token #importação do codigo hash
 from models import User,get_db #model do SQLAlchemy ., session conxeão ativa com bd
 from sqlalchemy.orm import  Session
+from jose import JWTError, jwt
+from security import verificar_token, verificacao_senha, hash_senha, criar_token
 app = FastAPI() #chama a API
 
 class Cadastro(BaseModel):#baseModel cria um modelo de dados usando Pydantic , valida dados automaticamente, gera doc automatica 
@@ -18,6 +20,7 @@ class Resposta(BaseModel): #modelo que sera devolvido na respostas
 class Login(BaseModel):
     email:EmailStr
     senha:str
+
 @app.post("/login") #endpoint de login
 def login(dados:Login, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.email == dados.email).first() #procura usuario com email enviado
@@ -27,7 +30,14 @@ def login(dados:Login, db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail="email ou senha invalidos") #se nao bater, retorna erro
     token = criar_token({"sub":user.email}) #cria token JWT com email do usuario como assunto (sub)
     return {"access_token": token, "token_type": "bearer"} #retorna o token para o cliente
-  
+@app.get("/me", response_model=Resposta) #endpoint para pegar dados do usuario logado
+
+def me(payload: dict = Depends(verificar_token), db: Session = Depends(get_db)):
+    user =db.query(User).filter(User.email == payload["sub"]).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="usuario nao encontrado") #se nao achar, retorna erro
+    return user #retorna o usuario logado
+
 @app.post("/cadastro",response_model=Resposta) #endpoint/ filtra dados, da um ".stri()" gera documento Swagger
 def cadastro(dados:Cadastro, db: Session = Depends(get_db)):
     user_existe = db.query(User).filter(User.email == dados.email).first()

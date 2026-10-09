@@ -1,8 +1,9 @@
 import bcrypt
-from jose import jwt
+from jose import jwt, JWTError
 import os
 from dotenv import load_dotenv #biblioteca para ler variaveis de ambiente do .env
 from datetime import datetime, timedelta, timezone
+from fastapi import Depends,HTTPException, Header
 def hash_senha (senha:str)->str: #recebe tipo string e depois -> retorna string
     senha_bytes = senha.encode('utf-8') #convertendo para bytes 
     salt = bcrypt.gensalt(rounds=10)#gerando o salt 
@@ -24,3 +25,10 @@ def criar_token(dados:dict) -> str: #cria token JWT
     payload["exp"] = expiracao #adiciona a data de expiração ao payload
     token = jwt.encode(payload, secret_key, algorithm=Algorithm) #gera o token JWT
     return token #retorna o token gerado
+def verificar_token(authorization:str = Header(...)):
+    try:
+        token = authorization.replace("Bearer ","") #remove a palavra Bearer do token
+        payload = jwt.decode(token, secret_key, algorithms=[Algorithm]) #decodifica o token usando a chave secreta e o algoritmo
+        return payload
+    except JWTError:
+        raise HTTPException(status_code=400, detail="token invalido") #se o token for invalido, retorna erro
