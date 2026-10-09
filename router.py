@@ -1,26 +1,25 @@
-from fastapi import Depends,FastAPI,HTTPException, Header, Request# retorna erro do http personalizado
+from fastapi import Depends,FastAPI,HTTPException, Header, Request
 from pydantic import BaseModel,ConfigDict, EmailStr,Field
-from security import verificacao_senha, hash_senha,criar_token #importação do codigo hash
-from models import User,get_db #model do SQLAlchemy ., session conxeão ativa com bd
+from security import verificacao_senha, hash_senha,criar_token 
+from models import User,get_db 
 from sqlalchemy.orm import  Session
 from jose import JWTError, jwt
 from security import verificar_token, verificacao_senha, hash_senha, criar_token
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 from datetime import datetime, timezone, timedelta
-app = FastAPI() #chama a API
+app = FastAPI()
 tentativas_login ={}
 
-class Cadastro(BaseModel):#baseModel cria um modelo de dados usando Pydantic , valida dados automaticamente, gera doc automatica 
-    #do Swagger , retorna 422 se algo tiver errado
-    email:EmailStr #garante que um email seja email
+class Cadastro(BaseModel):
+    email:EmailStr 
     senha: str = Field(min_length=8) #garante que a senha tera no minimo 8 digitos
     nome:str
 class Resposta(BaseModel): #modelo que sera devolvido na respostas 
     model_config = ConfigDict(from_attributes=True) #configura para pegar atributos do objeto e nao do dicionario
     id:int
     nome:str
-    email:EmailStr #sem senha
+    email:EmailStr 
 class Login(BaseModel):
     email:EmailStr
     senha:str
@@ -57,8 +56,8 @@ def login(request: Request, dados: Login, db: Session = Depends(get_db)):
 def me(payload: dict = Depends(verificar_token), db: Session = Depends(get_db)):
     user =db.query(User).filter(User.email == payload["sub"]).first()
     if not user:
-        raise HTTPException(status_code=404, detail="usuario nao encontrado") #se nao achar, retorna erro
-    return user #retorna o usuario logado
+        raise HTTPException(status_code=404, detail="usuario nao encontrado") 
+    return user 
 
 @app.post("/cadastro",response_model=Resposta) #endpoint/ filtra dados, da um ".stri()" gera documento Swagger
 def cadastro(dados:Cadastro, db: Session = Depends(get_db)):
@@ -72,7 +71,7 @@ def cadastro(dados:Cadastro, db: Session = Depends(get_db)):
         email = dados.email,
         senha_hash= senha_hash
     )
-    db.add(novo_usuario)#colcoa objeto na sessão
-    db.commit()#insert no bd 
-    db.refresh(novo_usuario)#atualiza o objeto com o bd 
+    db.add(novo_usuario)
+    db.commit()
+    db.refresh(novo_usuario)
     return novo_usuario

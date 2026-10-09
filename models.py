@@ -1,20 +1,20 @@
 
 from sqlalchemy import Integer, String, create_engine, Column, ForeignKey
-from sqlalchemy.orm import sessionmaker, declarative_base, relationship  # atenção: é 'relationship', não 'relationships'
+from sqlalchemy.orm import sessionmaker, declarative_base, relationship  
 import bcrypt
-from dotenv import load_dotenv #biblioteca para ler variaveis de ambiente do .env
+from dotenv import load_dotenv 
 import os
 from sqlalchemy.orm import Session
-load_dotenv() #carrega as variaveis de ambiente do .env para o ambiente de execução do Python, permitindo acessar as variaveis usando os.getenv()
+load_dotenv() 
 
-database_url = os.getenv("database_url") #variavel de ambiente para a url do banco de dados
+database_url = os.getenv("database_url") 
 
 engine = create_engine(database_url, echo=True)
 
-Session = sessionmaker(bind=engine)  # use nome diferente para a factory
+SessionLocal = sessionmaker(bind=engine)  
 
 def get_db():
-    db = Session()
+    db = SessionLocal()
     try:
         yield db
     finally:
@@ -22,7 +22,7 @@ def get_db():
 
 Base = declarative_base()
 
-# Aqui você precisa também do modelo User atualizado para o relacionamento funcionar:
+
 class User(Base):
     __tablename__ = "usuarios"
 
@@ -33,7 +33,7 @@ class User(Base):
     tasks = relationship("Task", back_populates="user", cascade="all, delete, delete-orphan")
     
 class Task(Base):
-    __tablename__ = "tasks"  # plural é melhor para tabelas, mas pode ser singular
+    __tablename__ = "tasks"  
 
     id = Column(Integer, primary_key=True)
     descricao = Column(String(100))  
