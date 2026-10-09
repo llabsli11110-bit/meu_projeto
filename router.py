@@ -1,11 +1,15 @@
-from fastapi import Depends,FastAPI,HTTPException, Header# retorna erro do http personalizado
+from fastapi import Depends,FastAPI,HTTPException, Header, Request# retorna erro do http personalizado
 from pydantic import BaseModel,ConfigDict, EmailStr,Field
 from security import verificacao_senha, hash_senha,criar_token #importação do codigo hash
 from models import User,get_db #model do SQLAlchemy ., session conxeão ativa com bd
 from sqlalchemy.orm import  Session
 from jose import JWTError, jwt
 from security import verificar_token, verificacao_senha, hash_senha, criar_token
+from slowapi import Limiter
+from slowapi.util import get_remote_address
+from datetime import datetime, timezone, timedelta
 app = FastAPI() #chama a API
+tentativas_login ={}
 
 class Cadastro(BaseModel):#baseModel cria um modelo de dados usando Pydantic , valida dados automaticamente, gera doc automatica 
     #do Swagger , retorna 422 se algo tiver errado
@@ -20,16 +24,34 @@ class Resposta(BaseModel): #modelo que sera devolvido na respostas
 class Login(BaseModel):
     email:EmailStr
     senha:str
+limiter = Limiter(key_func=get_remote_address) 
+app.state.limiter = limiter
 
-@app.post("/login") #endpoint de login
-def login(dados:Login, db: Session = Depends(get_db)):
-    user = db.query(User).filter(User.email == dados.email).first() #procura usuario com email enviado
+@app.post("/login")
+@limiter.limit("5/minute")
+def login(request: Request, dados: Login, db: Session = Depends(get_db)):
+    # --- Rate limit por email ---
+    agora = datetime.now(timezone.utc)
+    limite = agora - timedelta(minutes=1)
+    
+    tentativas = tentativas_login.get(dados.email, [])
+    tentativas = [t for t in tentativas if t > limite]
+    
+    if len(tentativas) >= 5:
+        raise HTTPException(status_code=429, detail="Muitas tentativas de login. Tente novamente mais tarde.")
+    
+    tentativas.append(agora)
+    tentativas_login[dados.email] = tentativas
+    
+    # --- Lógica de login original, sem mudanças ---
+    user = db.query(User).filter(User.email == dados.email).first()
     if not user:
-        raise HTTPException(status_code=400, detail="email ou senha invalidos") #se nao achar, retorna erro
-    if not verificacao_senha(dados.senha, user.senha_hash): #verifica se senha digitada bate com hash salvo
-        raise HTTPException(status_code=400, detail="email ou senha invalidos") #se nao bater, retorna erro
-    token = criar_token({"sub":user.email}) #cria token JWT com email do usuario como assunto (sub)
-    return {"access_token": token, "token_type": "bearer"} #retorna o token para o cliente
+        raise HTTPException(status_code=400, detail="email ou senha invalidos")
+    if not verificacao_senha(dados.senha, user.senha_hash):
+        raise HTTPException(status_code=400, detail="email ou senha invalidos")
+    token = criar_token({"sub": user.email})
+    return {"access_token": token, "token_type": "bearer"}
+   
 @app.get("/me", response_model=Resposta) #endpoint para pegar dados do usuario logado
 
 def me(payload: dict = Depends(verificar_token), db: Session = Depends(get_db)):
